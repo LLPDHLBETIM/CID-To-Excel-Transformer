@@ -1,0 +1,6 @@
+2025-05-20 10:58:38,978 - INFO - PDF carregado com sucesso: C:/Users/perna/OneDrive/Documentos/Process PDFs do GST/pdf_reader/pdf_reader/data/raw/Entrega de capacidade Marelli (55).pdf
+2025-05-20 10:58:38,979 - WARNING - CropBox missing from /Page, defaulting to MediaBox
+2025-05-20 10:58:38,980 - INFO - Processando página 1
+2025-05-20 10:58:39,177 - WARNING - CropBox missing from /Page, defaulting to MediaBox
+2025-05-20 10:58:39,178 - INFO - Registros estruturados: 3
+2025-05-20 10:59:07,492 - INFO - Dados gravados com sucesso em: C:/Users/perna/OneDrive/Documentos/Process PDFs do GST/pdf_reader/pdf_reader/data/processed/resultado_final2.xlsx
