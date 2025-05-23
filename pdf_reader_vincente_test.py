@@ -51,12 +51,12 @@ def process_columns_for_excel(all_columns):
         # Pad with None to ensure all columns have the same length
         padded_values = values + [None] * (max_length - len(values))
         processed_data[key] = padded_values
-    
     return processed_data
+
 
 def save_tables_to_excel(tables, df=None):
     """Save all tables to an Excel file with one sheet per table and the column-wise data"""
-    output_path = "marelli_data_complete.xlsx"
+    output_path = "pdf_data_complete.xlsx"
     
     with pd.ExcelWriter(output_path) as writer:
         # First, save the column-wise data if available
@@ -260,7 +260,7 @@ def process_split_header_tables(table, table_num):
 
 def read_pdf_column_wise():
     # Static path to the PDF file
-    pdf_path = "pdf_reader/pdf_reader/data/raw/Entrega de capacidade Marelli (55).pdf"
+    pdf_path = "pdf_reader/Entrega de capacidade Marelli (55).pdf"
     
     # Check if file exists
     if not os.path.exists(pdf_path):
@@ -282,8 +282,8 @@ def read_pdf_column_wise():
                 # Extract text
                 text = page.extract_text()
                 if text:
-                    # print(f"Text content from page {page_num}:")
-                    # print(text[:500] + "..." if len(text) > 500 else text)
+                    print(f"Text content from page {page_num}:")
+                    print(text[:500] + "..." if len(text) > 500 else text)
                     
                     # Process the text to extract column data
                     columns = process_columns(text)
@@ -298,12 +298,12 @@ def read_pdf_column_wise():
                 # Extract tables
                 tables = page.extract_tables()
                 if tables:
-                    # print(f"Found {len(tables)} tables on page {page_num}")
+                    print(f"Found {len(tables)} tables on page {page_num}")
                     
                     for table_num, table in enumerate(tables, 1):
-                        # print(f"Original Table {table_num} content:")
-                        # for row in table:
-                        #     print(row)
+                        print(f"Original Table {table_num} content:")
+                        for row in table:
+                            print(row)
                         
                         # Fix None values in specific tables
                         fixed_table = fix_none_values_in_table(table, table_num)
@@ -312,9 +312,9 @@ def read_pdf_column_wise():
                         if table_num in [7, 8]:
                             fixed_table = process_split_header_tables(fixed_table, table_num)
                         
-                        # print(f"Transformed Table {table_num} content:")
-                        # for row in fixed_table:
-                        #     print(row)
+                        print(f"Transformed Table {table_num} content:")
+                        for row in fixed_table:
+                            print(row)
                         
                         # Store the fixed table
                         all_tables[f"Table_{page_num}_{table_num}"] = fixed_table
@@ -341,8 +341,8 @@ def read_pdf_column_wise():
                                 
                                 # Create DataFrame
                                 df = pd.DataFrame(data, columns=headers)
-                                # print(f"DataFrame for Table {table_num}:")
-                                # print(df)
+                                print(f"DataFrame for Table {table_num}:")
+                                print(df)
                                 
                                 # Process each column and add to all_columns
                                 for col in df.columns:
@@ -428,10 +428,6 @@ def extract_column_data_from_text(text):
     
     return columns
 
-import pandas as pd
-
-import pandas as pd
-
 def save_tables_to_excel(tables, df=None):
     output_path = "marelli_data_complete.xlsx"
     
@@ -466,39 +462,48 @@ def save_tables_to_excel(tables, df=None):
             continue
         
         # Skip tables already processed as header_info
-        if all(isinstance(row, list) and len(row) == 2 for row in table_data):
+        if all(isinstance(row, list) and len(row) == 1 for row in table_data):
             continue
-        if len(table_data) == 2 and all(len(row) == 1 for row in table_data):
+        if len(table_data) == 1 and all(len(row) == 1 for row in table_data):
             continue
         
         # Assume first row is header
         headers = [str(h) if h is not None else f"Column_{i}" for i, h in enumerate(table_data[0])]
         rows = table_data[1:]
+
         
         # Filter empty rows (optional)
         filtered_rows = [row for row in rows if any(cell is not None and str(cell).strip() != '' for cell in row)]
         if not filtered_rows:
             continue
+        print(f"Processing rows '{filtered_rows}'")
         
         df_table = pd.DataFrame(filtered_rows, columns=headers)
         
+
         # Add header_info as columns with constant value per row
         for k, v in header_info.items():
             df_table[k] = v
         
-        dataframes.append(df_table)
+        print(f"Processing rows '{df_table}'")
+
+        dataframes.append(df_table[2:])
+
+        print(f"Table '{df_table}' processed and added to dataframes list")
+        df_final = pd.concat(dataframes, ignore_index=True)
+        print(f"Final DataFrame: {df_final}")
 
     # 3. Concatenate all dataframes (columns will merge and missing values will be NaN)
-    if dataframes:
-        df_final = pd.concat(dataframes, ignore_index=True)
-    else:
-        # If no data tables, create one row from header_info only
-        df_final = pd.DataFrame([header_info])
+    # if dataframes:
+    #     df_final = pd.concat(dataframes, ignore_index=True)
+    # else:
+    #     # If no data tables, create one row from header_info only
+    #     df_final = pd.DataFrame([header_info])
     
     # 4. Optional: reorder columns if you want header_info columns first (or any preferred order)
     header_cols = list(header_info.keys())
     other_cols = [col for col in df_final.columns if col not in header_cols]
-    df_final = df_final[header_cols + other_cols]
+    # df_final = df_fina]
     
     # 5. Save to Excel
     with pd.ExcelWriter(output_path) as writer:
