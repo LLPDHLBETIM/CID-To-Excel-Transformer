@@ -47,7 +47,14 @@ def save_tables_to_excel(tables, df=None):
     """
     output_path = "marelli_data_complete.xlsx"
 
-    # Keys of tables to include in the compiled sheet
+    # Helper to detect non-empty cells (removes zero-width spaces)
+    def is_nonempty(cell):
+        if cell is None:
+            return False
+        text = str(cell).replace('\u200b', '').strip()
+        return bool(text)
+
+    # Tables to include in the compiled sheet
     compile_keys = [
         'Table_1_1_transposed', 'Table_1_2_transposed',
         'Table_1_3', 'Table_1_4', 'Table_1_5', 'Table_1_6',
@@ -56,23 +63,38 @@ def save_tables_to_excel(tables, df=None):
     ]
 
     compiled_dfs = []
+    # Build list of DataFrames for each specified key
     for key in compile_keys:
         base = key.replace('_transposed', '')
         tbl = tables.get(base)
         if not tbl or len(tbl) < 2:
             continue
+
         if key.endswith('_transposed') and all(len(r) == 2 for r in tbl):
             df_vert = pd.DataFrame(tbl, columns=['field', 'value']).set_index('field')
             df_tab = df_vert.T.reset_index(drop=True)
         else:
-            headers = [str(h) if h is not None else f"Column_{i}" for i, h in enumerate(tbl[0])]
-            rows = tbl[1:]
-            df_tab = pd.DataFrame(rows, columns=headers)
+            headers = [
+                str(h) if h is not None else f"Column_{i}"
+                for i, h in enumerate(tbl[0])
+            ]
+            # keep only truly non-empty rows
+            data_rows = [
+                row for row in tbl[1:]
+                if any(is_nonempty(c) for c in row)
+            ]
+            df_tab = pd.DataFrame(data_rows, columns=headers)
+
         compiled_dfs.append(df_tab)
 
+    # Align all DataFrames on the same number of rows
     if compiled_dfs:
-        # Concatenate side-by-side, aligning on original row indices
-        df_compilado = pd.concat(compiled_dfs, axis=1)
+        max_rows = max(df.shape[0] for df in compiled_dfs)
+        aligned = []
+        for df in compiled_dfs:
+            df_aligned = df.reindex(index=range(max_rows)).ffill()
+            aligned.append(df_aligned)
+        df_compilado = pd.concat(aligned, axis=1)
     else:
         df_compilado = pd.DataFrame()
 
@@ -80,6 +102,7 @@ def save_tables_to_excel(tables, df=None):
     with pd.ExcelWriter(output_path) as writer:
         df_compilado.to_excel(writer, sheet_name='Compiled', index=False)
     print(f"Compiled sheet saved to {output_path}")
+
 
 def process_columns(text):
     """

@@ -47,6 +47,13 @@ def save_tables_to_excel(tables, df=None):
     """
     output_path = "marelli_data_complete.xlsx"
 
+    # Helper to detect non-empty cells (removes zero-width spaces)
+    def is_nonempty(cell):
+        if cell is None:
+            return False
+        text = str(cell).replace('\u200b', '').strip()
+        return bool(text)
+
     # Tables to include in the compiled sheet
     compile_keys = [
         'Table_1_1_transposed', 'Table_1_2_transposed',
@@ -71,9 +78,10 @@ def save_tables_to_excel(tables, df=None):
                 str(h) if h is not None else f"Column_{i}"
                 for i, h in enumerate(tbl[0])
             ]
+            # keep only truly non-empty rows
             data_rows = [
                 row for row in tbl[1:]
-                if any(cell is not None and str(cell).strip() for cell in row)
+                if any(is_nonempty(c) for c in row)
             ]
             df_tab = pd.DataFrame(data_rows, columns=headers)
 
@@ -94,8 +102,6 @@ def save_tables_to_excel(tables, df=None):
     with pd.ExcelWriter(output_path) as writer:
         df_compilado.to_excel(writer, sheet_name='Compiled', index=False)
     print(f"Compiled sheet saved to {output_path}")
-
-# Remaining functions (process_columns, fix_none_values_in_table, process_split_header_tables, read_pdf_column_wise) remain unchanged (process_columns, fix_none_values_in_table, process_split_header_tables, read_pdf_column_wise) remain unchanged (process_columns, fix_none_values_in_table, process_split_header_tables, read_pdf_column_wise) remain unchanged
 
 
 def process_columns(text):
